@@ -33,7 +33,7 @@ func (a Anecdote) Help() string {
 func (a Anecdote) OnMessage(msg Message) (response Response) {
 
 	if !contains(a.ReactOn(), msg.Text) {
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	if contains([]string{"chuck!", "/chuck"}, msg.Text) {
@@ -93,12 +93,12 @@ func (a Anecdote) jokesrv(category string) (response Response) {
 	req, err := makeHTTPRequest(reqURL)
 	if err != nil {
 		log.Printf("[WARN] failed to make request %s, error=%v", reqURL, err)
-		return Response{}
+		return NewVoidResponse()
 	}
 	resp, err := a.client.Do(req)
 	if err != nil {
 		log.Printf("[WARN] failed to send request %s, error=%v", reqURL, err)
-		return Response{}
+		return NewVoidResponse()
 	}
 	defer resp.Body.Close()
 	rr := struct {
@@ -108,11 +108,11 @@ func (a Anecdote) jokesrv(category string) (response Response) {
 
 	if err := json.NewDecoder(resp.Body).Decode(&rr); err != nil {
 		log.Printf("[WARN] failed to parse body, error=%v", err)
-		return Response{}
+		return NewVoidResponse()
 
 	}
 
-	return Response{Text: strings.TrimSuffix(rr.Content, "."), Send: true}
+	return NewResponse(strings.TrimSuffix(rr.Content, "."), true, false, false, false, 0)
 }
 
 func (a Anecdote) chuck() (response Response) {
@@ -129,23 +129,27 @@ func (a Anecdote) chuck() (response Response) {
 	req, err := makeHTTPRequest(reqURL)
 	if err != nil {
 		log.Printf("[WARN] failed to make request %s, error=%v", reqURL, err)
-		return Response{}
+		return NewVoidResponse()
 	}
 	resp, err := a.client.Do(req)
 	if err != nil {
 		log.Printf("[WARN] failed to send request %s, error=%v", reqURL, err)
-		return Response{}
+		return NewVoidResponse()
 	}
 	defer resp.Body.Close()
 
 	if err = json.NewDecoder(resp.Body).Decode(&chuckResp); err != nil {
 		log.Printf("[WARN] failed to convert from json, error=%v", err)
-		return Response{}
+		return NewVoidResponse()
 	}
-	return Response{
-		Text: "- " + strings.Replace(chuckResp.Value.Joke, "&quot;", "\"", -1),
-		Send: true,
-	}
+	return NewResponse(
+		"- "+strings.Replace(chuckResp.Value.Joke, "&quot;", "\"", -1),
+		true,
+		false,
+		false,
+		false,
+		0,
+	)
 }
 
 // ReactOn keys

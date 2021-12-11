@@ -39,7 +39,7 @@ func (e *Excerpt) OnMessage(msg Message) (response Response) {
 
 	link, err := e.link(msg.Text)
 	if err != nil {
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	client := http.Client{Timeout: 5 * time.Second}
@@ -47,13 +47,13 @@ func (e *Excerpt) OnMessage(msg Message) (response Response) {
 	resp, err := client.Get(url)
 	if err != nil {
 		log.Printf("[WARN] can't send request to parse article to %s, %v", url, err)
-		return Response{}
+		return NewVoidResponse()
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 400 {
 		log.Printf("[WARN] parser error code %d for %v", resp.StatusCode, url)
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	r := struct {
@@ -64,17 +64,17 @@ func (e *Excerpt) OnMessage(msg Message) (response Response) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("[WARN] can't read response for %s, %v", url, err)
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	if err := json.Unmarshal(body, &r); err != nil {
 		log.Printf("[WARN] can't decode response for %s, %v", url, err)
 	}
 
-	return Response{
-		Text: fmt.Sprintf("%s\n\n_%s_", r.Excerpt, r.Title),
-		Send: true,
-	}
+	return NewResponse(
+		fmt.Sprintf("%s\n\n_%s_", r.Excerpt, r.Title),
+		true, false, false, false, 0,
+	)
 }
 
 func (e *Excerpt) link(input string) (link string, err error) {

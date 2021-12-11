@@ -42,7 +42,7 @@ func NewPrepPost(client HTTPClient, api string, d time.Duration) *PrepPost {
 func (p *PrepPost) OnMessage(Message) (response Response) {
 
 	if time.Since(p.last.checked) < p.checkDuration {
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	defer func() {
@@ -54,7 +54,7 @@ func (p *PrepPost) OnMessage(Message) (response Response) {
 		if err != errNotPost {
 			log.Printf("[WARN] failed to check for new post, %v", err)
 		}
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	defer func() {
@@ -63,9 +63,12 @@ func (p *PrepPost) OnMessage(Message) (response Response) {
 
 	if p.last.prepPost.URL != "" && pi.URL != p.last.prepPost.URL {
 		log.Printf("[INFO] detected new prep topic %s", pi.URL)
-		return Response{Send: true, Pin: true, Text: fmt.Sprintf("Сбор тем начался - %s", pi.URL)}
+		return NewResponse(
+			fmt.Sprintf("Сбор тем начался - %s", pi.URL),
+			true, true, false, false, 0,
+		)
 	}
-	return Response{}
+	return NewVoidResponse()
 }
 
 func (p *PrepPost) recentPrepPost() (pi postInfo, err error) {

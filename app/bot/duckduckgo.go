@@ -29,7 +29,7 @@ func (d *Duck) OnMessage(msg Message) (response Response) {
 
 	ok, reqText := d.request(msg.Text)
 	if !ok {
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	reqURL := fmt.Sprintf("https://api.duckduckgo.com/?q=%s&format=json&no_html=1&no_redirect=1&skip_disambig=1", reqText)
@@ -37,13 +37,13 @@ func (d *Duck) OnMessage(msg Message) (response Response) {
 	req, err := makeHTTPRequest(reqURL)
 	if err != nil {
 		log.Printf("[WARN] failed to make request %s, error=%v", reqURL, err)
-		return Response{}
+		return NewVoidResponse()
 	}
 	req.Header.Set("X-Mashape-Key", d.mashapeKey)
 	resp, err := d.client.Do(req)
 	if err != nil {
 		log.Printf("[WARN] failed to send request %s, error=%v", reqURL, err)
-		return Response{}
+		return NewVoidResponse()
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -55,7 +55,7 @@ func (d *Duck) OnMessage(msg Message) (response Response) {
 	}{}
 	if err = json.NewDecoder(resp.Body).Decode(&duckResp); err != nil {
 		log.Printf("[WARN] failed to convert from json, error=%v", err)
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	mdLink := func(inp string) string {
@@ -65,17 +65,17 @@ func (d *Duck) OnMessage(msg Message) (response Response) {
 	}
 
 	if duckResp.AbstractText == "" {
-		return Response{
-			Text: fmt.Sprintf("_не в силах. но могу помочь_ [это поискать](https://duckduckgo.com/?q=%s)", mdLink(reqText)),
-			Send: true,
-		}
+		return NewResponse(
+			fmt.Sprintf("_не в силах. но могу помочь_ [это поискать](https://duckduckgo.com/?q=%s)", mdLink(reqText)),
+			true, false, false, false, 0,
+		)
 	}
 
 	respMD := fmt.Sprintf("- %s\n[%s](%s)", duckResp.AbstractText, duckResp.AbstractSource, mdLink(duckResp.AbstractURL))
-	return Response{
-		Text: respMD,
-		Send: true,
-	}
+	return NewResponse(
+		respMD,
+		true, false, false, false, 0,
+	)
 }
 
 func (d *Duck) request(text string) (react bool, reqText string) {

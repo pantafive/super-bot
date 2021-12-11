@@ -29,11 +29,11 @@ func (w WTF) OnMessage(msg Message) (response Response) {
 		message: msg.Text}
 
 	if !wtfContains.Contains() {
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	if w.superUser.IsSuper(msg.From.Username) {
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	mention := "@" + msg.From.Username
@@ -49,11 +49,10 @@ func (w WTF) OnMessage(msg Message) (response Response) {
 		banDuration = time.Minute*77 + time.Second*7
 	}
 
-	return Response{
-		Text:        fmt.Sprintf("[%s](tg://user?id=%d) получает бан на %v", mention, msg.From.ID, HumanizeDuration(banDuration)),
-		Send:        true,
-		BanInterval: banDuration,
-	}
+	return NewResponse(
+		fmt.Sprintf("[%s](tg://user?id=%d) получает бан на %v", mention, msg.From.ID, HumanizeDuration(banDuration)),
+		true, false, false, false, banDuration,
+	)
 }
 
 // ReactOn keys

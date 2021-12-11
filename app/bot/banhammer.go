@@ -60,17 +60,17 @@ func (b *Banhammer) OnMessage(msg Message) (response Response) {
 
 	ok, cmd, name := b.parse(msg.Text)
 	if !ok || !b.superUser.IsSuper(msg.From.Username) { // only super may ban/unban
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	if b.superUser.IsSuper(strings.TrimPrefix(name, "@")) { // super can't be banned by another super
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	user, found := b.recentUsers[strings.TrimPrefix(name, "@")]
 	if !found {
 		log.Printf("[WARN] can't get ID for user %s", name)
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	switch cmd {
@@ -80,21 +80,21 @@ func (b *Banhammer) OnMessage(msg Message) (response Response) {
 		})
 		if err != nil {
 			log.Printf("[WARN] failed to ban %s, %v", name, err)
-			return Response{}
+			return NewVoidResponse()
 		}
 		log.Printf("[INFO] banned %+v by %+v", user.User, msg.From)
-		return Response{Text: fmt.Sprintf("прощай %s", name), Send: true}
+		return NewResponse(fmt.Sprintf("прощай %s", name), true, false, false, false, 0)
 	case "unban":
 		_, err := b.tgClient.UnbanChatMember(tbapi.ChatMemberConfig{UserID: user.ID, ChatID: msg.ChatID})
 		if err != nil {
 			log.Printf("[WARN] failed to unban %s, %v", name, err)
-			return Response{}
+			return NewVoidResponse()
 		}
 		log.Printf("[INFO] unbanned %+v by %+v", user.User, msg.From)
-		return Response{Text: fmt.Sprintf("амнистия для %s", name), Send: true}
+		return NewResponse(fmt.Sprintf("амнистия для %s", name), true, false, false, false, 0)
 	}
 
-	return Response{}
+	return NewVoidResponse()
 }
 
 func (b *Banhammer) cleanup() {

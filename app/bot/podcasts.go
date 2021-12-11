@@ -53,37 +53,37 @@ func (p *Podcasts) OnMessage(msg Message) (response Response) {
 
 	ok, reqText := p.request(msg.Text)
 	if !ok {
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	reqURL := fmt.Sprintf("%s/search?limit=%d&q=%s", p.siteAPI, p.maxResults, reqText)
 	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
 		log.Printf("[WARN] failed to make request %s, error=%v", reqURL, err)
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	resp, err := p.client.Do(req)
 	if err != nil {
 		log.Printf("[WARN] failed to send request %s, error=%v", reqURL, err)
-		return Response{}
+		return NewVoidResponse()
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("[WARN] request %s returned %s", reqURL, resp.Status)
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	sr := []siteAPIResp{}
 	if err := json.NewDecoder(resp.Body).Decode(&sr); err != nil {
 		log.Printf("[WARN] failed to parse response from %s, error=%v", reqURL, err)
-		return Response{}
+		return NewVoidResponse()
 	}
-	return Response{
-		Text: p.makeBotResponse(sr, reqText),
-		Send: true,
-	}
+	return NewResponse(
+		p.makeBotResponse(sr, reqText),
+		true, false, false, false, 0,
+	)
 }
 
 func (p *Podcasts) makeBotResponse(sr []siteAPIResp, reqText string) string {

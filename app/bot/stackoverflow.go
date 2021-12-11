@@ -14,7 +14,7 @@ import (
 // reacts on "so!" prefix, i.e. "so! golang"
 type StackOverflow struct{}
 
-// StackOverflow for json response
+// StackOverflow for json Response
 type soResponse struct {
 	Items []struct {
 		Title string   `json:"title"`
@@ -37,7 +37,7 @@ func (s StackOverflow) Help() string {
 // OnMessage returns one entry
 func (s StackOverflow) OnMessage(msg Message) (response Response) {
 	if !contains(s.ReactOn(), msg.Text) {
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	reqURL := "https://api.stackexchange.com/2.2/questions?order=desc&sort=activity&site=stackoverflow"
@@ -46,12 +46,12 @@ func (s StackOverflow) OnMessage(msg Message) (response Response) {
 	req, err := makeHTTPRequest(reqURL)
 	if err != nil {
 		log.Printf("[WARN] failed to prep request %s, error=%v", reqURL, err)
-		return Response{}
+		return NewVoidResponse()
 	}
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("[WARN] failed to send request %s, error=%v", reqURL, err)
-		return Response{}
+		return NewVoidResponse()
 	}
 	defer resp.Body.Close()
 
@@ -59,17 +59,17 @@ func (s StackOverflow) OnMessage(msg Message) (response Response) {
 
 	if err := json.NewDecoder(resp.Body).Decode(&soRecs); err != nil {
 		log.Printf("[WARN] failed to parse response, error %v", err)
-		return Response{}
+		return NewVoidResponse()
 	}
 	if len(soRecs.Items) == 0 {
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	r := soRecs.Items[rand.Intn(len(soRecs.Items))] //nolint:gosec
-	return Response{
-		Text: fmt.Sprintf("[%s](%s) %s", r.Title, r.Link, strings.Join(r.Tags, ",")),
-		Send: true,
-	}
+	return NewResponse(
+		fmt.Sprintf("[%s](%s) %s", r.Title, r.Link, strings.Join(r.Tags, ",")),
+		true, false, false, false, 0,
+	)
 }
 
 // ReactOn keys

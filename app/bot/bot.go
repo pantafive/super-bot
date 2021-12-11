@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -38,6 +39,30 @@ type Response struct {
 	Unpin       bool          // enable unpin
 	Preview     bool          // enable web preview
 	BanInterval time.Duration // bots banning user set the interval
+}
+
+var re = regexp.MustCompile(`(^|\s)(\\_)(\S.+?\S)(\\_)(\s|$)`)
+
+// NewResponse creates Response with sanitized text field
+//github.com/go-telegram-bot-api/telegram-bot-api returns error
+//"Can't find end of the entity starting at byte offset" if text contains _ (underscore).
+//Escaping fixes this.
+func NewResponse(text string, send bool, pin bool, unpin bool, preview bool, banInterval time.Duration) Response {
+	text = strings.Replace(text, "_", "\\_", -1)
+	text = re.ReplaceAllString(text, `${1}_${3}_${5}`)
+	return Response{
+		Text:        text,
+		Send:        send,
+		Pin:         pin,
+		Unpin:       unpin,
+		Preview:     preview,
+		BanInterval: banInterval,
+	}
+}
+
+// NewVoidResponse creates empty Response. Used for errors. Thi kind of response can't be sent.
+func NewVoidResponse() Response {
+	return NewResponse("", false, false, false, false, 0)
 }
 
 // HTTPClient wrap http.Client to allow mocking
@@ -112,10 +137,10 @@ func (b MultiBot) Help() string {
 //noinspection GoShadowedVar
 func (b MultiBot) OnMessage(msg Message) (response Response) {
 	if contains([]string{"help", "/help", "help!"}, msg.Text) {
-		return Response{
-			Text: b.Help(),
-			Send: true,
-		}
+		return NewResponse(
+			b.Help(),
+			true, false, false, false, 0,
+		)
 	}
 
 	resps := make(chan string)
@@ -162,13 +187,14 @@ func (b MultiBot) OnMessage(msg Message) (response Response) {
 	})
 
 	log.Printf("[DEBUG] answers %d, send %v", len(lines), len(lines) > 0)
-	return Response{
-		Text:        strings.Join(lines, "\n"),
-		Send:        len(lines) > 0,
-		Pin:         atomic.LoadInt32(&pin) > 0,
-		Unpin:       atomic.LoadInt32(&unpin) > 0,
-		BanInterval: banInterval,
-	}
+	return NewResponse(
+		strings.Join(lines, "\n"),
+		len(lines) > 0,
+		atomic.LoadInt32(&pin) > 0,
+		atomic.LoadInt32(&unpin) > 0,
+		false,
+		banInterval,
+	)
 }
 
 // ReactOn returns combined list of all keywords

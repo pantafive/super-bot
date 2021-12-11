@@ -52,26 +52,29 @@ func (p Sys) Help() (line string) {
 // OnMessage implements bot.Interface
 func (p Sys) OnMessage(msg Message) (response Response) {
 	if !contains(p.ReactOn(), msg.Text) {
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	if strings.EqualFold(msg.Text, "say!") {
 		if p.say != nil && len(p.say) > 0 {
-			return Response{
-				Text: fmt.Sprintf("_%s_", p.say[rand.Intn(len(p.say))]), //nolint:gosec
-				Send: true,
-			}
+			return NewResponse(
+				fmt.Sprintf("_%s_", p.say[rand.Intn(len(p.say))]), //nolint:gosec
+				true, false, false, false, 0,
+			)
 		}
-		return Response{}
+		return NewVoidResponse()
 	}
 
 	for _, bot := range p.commands {
 		if found := contains(bot.triggers, strings.ToLower(msg.Text)); found {
-			return Response{Text: bot.message, Send: true}
+			return NewResponse(
+				bot.message,
+				true, false, false, false, 0,
+			)
 		}
 	}
 
-	return Response{}
+	return NewVoidResponse()
 }
 
 func (p *Sys) loadBasicData() error {
