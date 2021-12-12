@@ -225,7 +225,7 @@ func (l *TelegramListener) applyBan(msg bot.Message, duration time.Duration, cha
 	}
 	m := fmt.Sprintf("[%s](tg://user?id=%d) _тебя слишком много, отдохни..._", mention, userID)
 
-	if err := l.sendBotResponse(bot.Response{Text: m, Send: true}, chatID); err != nil {
+	if err := l.sendBotResponse(bot.NewResponse(m, true, false, false, false, 0), chatID); err != nil {
 		return errors.Wrapf(err, "failed to send ban message for %v", msg.From)
 	}
 	err := l.banUser(duration, chatID, userID)
@@ -239,7 +239,7 @@ func (l *TelegramListener) Submit(ctx context.Context, text string, pin bool) er
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case l.msgs.ch <- bot.Response{Text: text, Pin: pin, Send: true, Preview: true}:
+	case l.msgs.ch <- bot.NewResponse(text, true, pin, false, true, 0):
 	}
 	return nil
 }

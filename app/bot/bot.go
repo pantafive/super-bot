@@ -60,7 +60,7 @@ func NewResponse(text string, send bool, pin bool, unpin bool, preview bool, ban
 	}
 }
 
-// NewVoidResponse creates empty Response. Used for errors. Thi kind of response can't be sent.
+// NewVoidResponse creates empty Response. Used for errors. This kind of response can't be sent.
 func NewVoidResponse() Response {
 	return NewResponse("", false, false, false, false, 0)
 }
